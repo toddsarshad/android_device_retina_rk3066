@@ -27,7 +27,7 @@ TARGET_BOOTLOADER_BOARD_NAME := rk30board
 BOARD_KERNEL_CMDLINE :=
 BOARD_KERNEL_BASE := 0x60400000
 BOARD_KERNEL_PAGESIZE := 16384
-TARGET_PREBUILT_KERNEL := $(LOCAL_PATH)/kernel
+TARGET_PREBUILT_KERNEL := device/chuwi_v99/rk30sdk/kernel
 
 # partitioning
 TARGET_NO_BOOTLOADER := true
@@ -40,7 +40,7 @@ TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_HAS_LARGE_FILESYSTEM := true
 
 # graphics
-BOARD_EGL_CFG := $(LOCAL_PATH)/egl.cfg
+BOARD_EGL_CFG := device/chuwi_v99/rk30sdk/egl.cfg
 USE_OPENGL_RENDERER := true
 ENABLE_WEBGL := true
 DEVICE_RESOLUTION := 2048x1536
@@ -84,7 +84,7 @@ TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT := device/chuwi_v99/rk30sdk/releasetoo
 
 # recovery
 TARGET_PROVIDES_INIT_RC := true
-TARGET_RECOVERY_INITRC := $(LOCAL_PATH)/recovery.init.rc
+TARGET_RECOVERY_INITRC := device/chuwi_v99/rk30sdk/recovery.init.rc
 TARGET_RECOVERY_PRE_COMMAND := "busybox dd if=/misc.img of=/dev/block/mtdblock0; sync"
 BOARD_HAS_NO_SELECT_BUTTON := true
 BOARD_UMS_LUNFILE := "/sys/devices/platform/usb20_otg/gadget/lun0/file"

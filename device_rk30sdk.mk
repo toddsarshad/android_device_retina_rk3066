@@ -5,7 +5,7 @@ $(call inherit-product, device/common/gps/gps_us_supl.mk)
 
 DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 
-LOCAL_PATH := device/chuwi_v99/rk30sdk
+#LOCAL_PATH := device/chuwi_v99/rk30sdk
 ifeq ($(TARGET_PREBUILT_KERNEL),)
 	LOCAL_KERNEL := $(LOCAL_PATH)/kernel
 else
@@ -127,7 +127,7 @@ TARGET_BOOTANIMATION_NAME := horizontal-2048x1536
 PRODUCT_BUILD_PROP_OVERRIDES += BUILD_UTC_DATE=0
 
 
-$(call inherit-product, frameworks/base/build/tablet-dalvik-heap.mk)
+$(call inherit-product, frameworks/native/build/tablet-dalvik-heap.mk)
 $(call inherit-product, build/target/product/full_base.mk)
-$(call inherit-product, build/target/product/full.mk)
+#$(call inherit-product, build/target/product/full.mk)
 $(call inherit-product-if-exists, vendor/chuwi_v99/rk30sdk/rk30sdk-vendor.mk)
