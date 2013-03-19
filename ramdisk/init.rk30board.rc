@@ -1,14 +1,18 @@
+import init.rk30board.usb.rc
+
 on early-init
-    export EXTERNAL_STORAGE /storage/sdcard0
-    export SECONDARY_STORAGE /storage/sdcard1
-    mkdir /storage 0050 system sdcard_r
-    mkdir /storage/sdcard0 0000 system system
-    mkdir /storage/sdcard1 0000 system system
-    mkdir /storage/usbdisk0 0000 system system
-    symlink /storage/sdcard0 /sdcard
-    symlink /storage/sdcard0 /mnt/sdcard
-    symlink /storage/sdcard1 /mnt/external_sd
-    symlink /storage/usbdisk0 /mnt/usb_storage
+    export EXTERNAL_STORAGE /mnt/sdcard
+    mkdir /mnt/sdcard 0000 system system
+    # for backwards compatibility
+    symlink /mnt/sdcard /sdcard
+
+    export SECOND_VOLUME_STORAGE /mnt/external_sd
+    mkdir /mnt/external_sd 0000 system system
+    export THIRD_VOLUME_STORAGE /mnt/usb_storage
+    mkdir /mnt/usb_storage 0000 system system
+
+on fs
+    #mount vfat mtd@user /mnt/sdcard wait noatime nodiratime  nosuid nodev uid=1000,gid=1015,fmask=0702,dmask=0702
 
 on post-fs-data
     # we will remap this as /mnt/sdcard with the sdcard fuse tool
@@ -31,19 +35,17 @@ on init
 
 on boot
     mount debugfs /sys/kernel/debug /sys/kernel/debug
+    chown system system /sys/devices/system/cpu/cpu1/online
+    chmod 0660 /sys/devices/system/cpu/cpu1/online
     insmod /system/lib/modules/vpu_service.ko
 
 #backlight
     chown system system /sys/class/backlight/rk28_bl/brightness
 
-#hdmi
-    chown root system /sys/class/display/HDMI/enable
-    chown root system /sys/class/display/HDMI/mode
-    chown root system /sys/class/display/HDMI/scale
-
 # for wifi
     mkdir /data/misc/wifi 0770 wifi wifi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets/tmp 0440 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
     chown dhcp dhcp /data/misc/dhcp
 
@@ -59,7 +61,14 @@ on boot
     chmod 0664 /sys/class/rfkill/rfkill0/state
 
     chown system system /sys/mali400_utility/utility
-    chmod 0664 /sys/mali400_utility/utility 
+    chmod 0664 /sys/mali400_utility/utility
+
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+    chmod 0664 /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+     
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
+    chmod 0664 /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
+
 # create virtual SD card at /mnt/sdcard, based on the /data/media directory
 # daemon will drop to user/group system/media_rw after initializing
 # underlying files in /data/media will be created with user and group media_rw (1023)
@@ -67,7 +76,7 @@ on boot
 #    class late_start
 
 service wpa_supplicant /system/bin/wpa_supplicant \
-    -Dwext -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf
+    -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf
     #-Dnl80211 -iwlan0 -puse_p2p_group_interface=1 -e/data/misc/wifi/entropy.bin
     #   we will start as root and wpa_supplicant will switch to user wifi
     #   after setting up the capabilities required for WEXT
@@ -80,9 +89,21 @@ service wpa_supplicant /system/bin/wpa_supplicant \
 
 #add for wifi direct (gwl)
 service p2p_supplicant /system/bin/wpa_supplicant \
-    -Dnl80211 -iwlan0 -puse_p2p_group_interface=1 -e/data/misc/wifi/entropy.bin
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -N \
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf -e/data/misc/wifi/entropy.bin -puse_p2p_group_interface=1
+    #   we will start as root and wpa_supplicant will switch to user wifi
+    #   after setting up the capabilities required for WEXT
+    #   user wifi
+    #   group wifi inet keystore
     class main
     socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service rtl_supplicant /system/bin/wpa_supplicant \
+    -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf
+    socket wpa_wlan0 dgram 660 wifi wifi
+    group wifi inet
     disabled
     oneshot
 
@@ -130,6 +151,10 @@ service bugreport /system/bin/bugreport.sh
     oneshot
     keycodes 114 115 116
 
+service chrome /system/bin/chrome.sh
+    class main
+    oneshot
+
 service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
     class main
 	disabled
@@ -142,6 +167,7 @@ service iprenew_eth0 system/bin/dhcpcd -n
 
 service battery_charger /charger
     class charger
+    
 
 service akmd /system/bin/akmd8975
         class main
@@ -149,9 +175,22 @@ service akmd /system/bin/akmd8975
         group system
         oneshot
 
-on property:sys.gmali.performance=video
-    start performance
+on property:sys.gmali.performance=ui
+    start pat_ui
 
-service performance /system/bin/performance
+service pat_ui /system/bin/performance ui
+    disabled
+    oneshot
+
+on property:sys.gmali.performance=video
+    start pat_video
+
+#factory
+on property:ro.factory.tool=1     
+    write /sys/class/gsensor_class/orientation gsensor={-1,0,0,0,0,1,0,-1,0}
+    write /sys/devices/platform/rk29-keypad/rk29key {menu:MENU,home:HOME,vol+:VOLUP,vol-:VOLDOWN,play:PLAY,esc:ESC,sensor:CAMERA}
+    write /sys/devices/platform/rk29_backlight/rk29backlight 100
+
+service pat_video /system/bin/performance video
     disabled
     oneshot

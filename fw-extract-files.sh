@@ -1,5 +1,5 @@
 #!/bin/sh
-FW=~/chuwi_v99/chuwifirmware/system
+FW=~/chuwi_v99/oemfirmware/system
 BASE=../../../vendor/chuwi_v99/rk30sdk/proprietary
 rm -rf $BASE/*
 
